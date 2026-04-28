@@ -1,0 +1,9 @@
+{
+  "status": "firing",
+  "alerts": [{
+    "status": "firing",
+    "labels": {"alertname": "HighCPU", "severity": "critical", "instance": "10.0.1.5", "device": "server-03"},
+    "annotations": {"summary": "CPU usage above 90%", "description": "CPU at 95% for 5 minutes"},
+    "startsAt": "2026-04-28T10:30:00Z"
+  }]
+}

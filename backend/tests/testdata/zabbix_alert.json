@@ -1,0 +1,7 @@
+{
+  "event.name": "Link down on Gi0/1",
+  "event.severity": "High",
+  "subject": "Interface Gi0/1 is down on switch-01",
+  "message": "Interface GigabitEthernet0/1 status changed to DOWN",
+  "host": {"name": "switch-01", "ip": "10.0.0.1"}
+}
