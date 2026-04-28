@@ -42,6 +42,9 @@ func (h *AdminHandler) ListAuditLogs(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list audit logs"})
 		return
 	}
+	if logs == nil {
+		logs = []model.AuditLog{}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"items":     logs,

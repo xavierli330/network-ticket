@@ -99,6 +99,9 @@ func (h *AlertHandler) ListSources(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list sources"})
 		return
 	}
+	if sources == nil {
+		sources = []model.AlertSource{}
+	}
 	c.JSON(http.StatusOK, gin.H{"items": sources})
 }
 

@@ -33,6 +33,9 @@ func (h *ClientHandler) List(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list clients"})
 		return
 	}
+	if clients == nil {
+		clients = []model.Client{}
+	}
 	c.JSON(http.StatusOK, gin.H{"items": clients})
 }
 

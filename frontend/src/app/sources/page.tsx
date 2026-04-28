@@ -140,7 +140,7 @@ export default function SourcesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sources.length === 0 ? (
+                  {!sources || sources.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                         暂无告警源数据

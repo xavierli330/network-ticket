@@ -12,7 +12,7 @@ interface TicketTableProps {
 export default function TicketTable({ tickets }: TicketTableProps) {
   const router = useRouter();
 
-  if (tickets.length === 0) {
+  if (!tickets || tickets.length === 0) {
     return (
       <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
         暂无工单数据

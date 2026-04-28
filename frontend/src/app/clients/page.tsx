@@ -128,7 +128,7 @@ export default function ClientsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {clients.length === 0 ? (
+                  {!clients || clients.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                         暂无客户数据

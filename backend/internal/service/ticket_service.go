@@ -199,6 +199,9 @@ func (s *TicketService) List(ctx context.Context, filter model.TicketFilter) ([]
 	if err != nil {
 		return nil, 0, err
 	}
+	if tickets == nil {
+		tickets = []model.Ticket{}
+	}
 	return tickets, int64(total), nil
 }
 
