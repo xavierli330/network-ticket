@@ -1,0 +1,29 @@
+# 环境变量（含敏感信息）
+.env
+
+# 后端本地配置
+backend/config.yaml
+
+# 日志
+*.log
+logs/
+
+# 数据库备份
+backups/
+
+# 编译产物
+backend/server
+backend/bin/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 其他
+.superpowers/
