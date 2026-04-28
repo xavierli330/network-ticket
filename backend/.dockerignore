@@ -1,0 +1,7 @@
+bin/
+server
+*.log
+logs/
+config.yaml
+.env
+.git/

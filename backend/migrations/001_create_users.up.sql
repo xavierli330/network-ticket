@@ -11,4 +11,4 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO users (username, password, role) VALUES
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin');
+('admin', '$2a$10$wVfbWEnRXOidIOaQ2s6kGeTQrNxQucW.WhH/.rW1K7LsmP1TFIFTm', 'admin');

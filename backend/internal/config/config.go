@@ -99,6 +99,32 @@ func Load(path string) (*Config, error) {
 	v.AutomaticEnv()
 	v.SetTypeByDefaultValue(true)
 
+	// Explicitly bind nested config keys to env vars so Unmarshal picks them up.
+	_ = v.BindEnv("server.port", "NT_SERVER_PORT")
+	_ = v.BindEnv("server.mode", "NT_SERVER_MODE")
+	_ = v.BindEnv("database.host", "NT_DATABASE_HOST")
+	_ = v.BindEnv("database.port", "NT_DATABASE_PORT")
+	_ = v.BindEnv("database.user", "NT_DATABASE_USER")
+	_ = v.BindEnv("database.password", "NT_DATABASE_PASSWORD")
+	_ = v.BindEnv("database.dbname", "NT_DATABASE_DBNAME")
+	_ = v.BindEnv("database.max_open_conns", "NT_DATABASE_MAX_OPEN_CONNS")
+	_ = v.BindEnv("database.max_idle_conns", "NT_DATABASE_MAX_IDLE_CONNS")
+	_ = v.BindEnv("log.level", "NT_LOG_LEVEL")
+	_ = v.BindEnv("log.format", "NT_LOG_FORMAT")
+	_ = v.BindEnv("log.file_path", "NT_LOG_FILE_PATH")
+	_ = v.BindEnv("log.max_size_mb", "NT_LOG_MAX_SIZE_MB")
+	_ = v.BindEnv("log.max_backups", "NT_LOG_MAX_BACKUPS")
+	_ = v.BindEnv("log.max_age_days", "NT_LOG_MAX_AGE_DAYS")
+	_ = v.BindEnv("jwt.secret", "NT_JWT_SECRET")
+	_ = v.BindEnv("jwt.expire_hours", "NT_JWT_EXPIRE_HOURS")
+	_ = v.BindEnv("security.nonce.backend", "NT_SECURITY_NONCE_BACKEND")
+	_ = v.BindEnv("security.nonce.ttl", "NT_SECURITY_NONCE_TTL")
+	_ = v.BindEnv("security.nonce.file.path", "NT_SECURITY_NONCE_FILE_PATH")
+	_ = v.BindEnv("worker.pool_size", "NT_WORKER_POOL_SIZE")
+	_ = v.BindEnv("worker.retry_max", "NT_WORKER_RETRY_MAX")
+	_ = v.BindEnv("worker.retry_base_interval", "NT_WORKER_RETRY_BASE_INTERVAL")
+	_ = v.BindEnv("worker.retry_max_interval", "NT_WORKER_RETRY_MAX_INTERVAL")
+
 	if err := v.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("read config: %w", err)
 	}

@@ -78,7 +78,24 @@ for i in {1..30}; do
     echo -n "."
 done
 
-# 6. 等待后端就绪
+# 6. 执行数据库迁移
+echo ""
+echo "正在执行数据库迁移..."
+MYSQL_ROOT_PASSWORD=$(grep "^MYSQL_ROOT_PASSWORD=" .env | cut -d= -f2-)
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+docker run --rm --network "${PROJECT_NAME}_default" \
+    -v "$(pwd)/backend/migrations:/migrations" \
+    migrate/migrate:latest \
+    -path /migrations \
+    -database "mysql://root:${MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/network_ticket?multiStatements=true" \
+    up
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ 数据库迁移完成${NC}"
+else
+    echo -e "${YELLOW}⚠ 数据库迁移可能已执行过或出现错误，继续启动...${NC}"
+fi
+
+# 7. 等待后端就绪
 echo ""
 echo "等待后端服务就绪..."
 for i in {1..30}; do
