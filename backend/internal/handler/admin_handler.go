@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	"github.com/xavierli/network-ticket/internal/model"
 	"github.com/xavierli/network-ticket/internal/repository"
 )
 
