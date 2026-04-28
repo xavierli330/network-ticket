@@ -1,0 +1,32 @@
+server:
+  port: 8080
+  mode: "debug"
+database:
+  host: "127.0.0.1"
+  port: 3306
+  user: "ticket"
+  password: "ticket_password"
+  dbname: "network_ticket"
+  max_open_conns: 20
+  max_idle_conns: 10
+log:
+  level: "debug"
+  format: "json"
+  file_path: "./logs/server.log"
+  max_size_mb: 100
+  max_backups: 10
+  max_age_days: 30
+jwt:
+  secret: "change-me-in-production"
+  expire_hours: 24
+security:
+  nonce:
+    backend: "db"
+    ttl: "5m"
+    file:
+      path: "./data/nonces.log"
+worker:
+  pool_size: 10
+  retry_max: 5
+  retry_base_interval: "1s"
+  retry_max_interval: "30s"
