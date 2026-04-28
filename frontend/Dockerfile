@@ -8,11 +8,13 @@ RUN npm run build
 
 FROM node:20-alpine
 WORKDIR /app
-COPY --from=builder /build/package.json ./
-COPY --from=builder /build/node_modules ./node_modules
-COPY --from=builder /build/.next ./.next
-COPY --from=builder /build/public ./public
-COPY --from=builder /build/next.config.js ./
 
+# Standalone output contains its own trimmed node_modules
+COPY --from=builder /build/.next/standalone ./
+COPY --from=builder /build/.next/static ./.next/static
+COPY --from=builder /build/public ./public
+
+ENV NODE_ENV=production
+ENV PORT=3000
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
