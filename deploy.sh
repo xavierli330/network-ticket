@@ -66,7 +66,10 @@ echo ""
 echo "正在构建并启动服务，这可能需要几分钟..."
 $DOCKER_COMPOSE -f $COMPOSE_FILE up -d --build
 
-# 5. 等待 MySQL 就绪
+# 5. 重启 Nginx 以确保 upstream 指向正确的容器 IP
+$DOCKER_COMPOSE -f $COMPOSE_FILE restart nginx
+
+# 6. 等待 MySQL 就绪
 echo ""
 echo "等待数据库就绪..."
 for i in {1..30}; do

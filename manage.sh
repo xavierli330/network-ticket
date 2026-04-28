@@ -79,6 +79,7 @@ cmd_update() {
     echo "正在重新构建并部署..."
     $DOCKER_COMPOSE -f $COMPOSE_FILE down
     $DOCKER_COMPOSE -f $COMPOSE_FILE up -d --build
+    $DOCKER_COMPOSE -f $COMPOSE_FILE restart nginx
     echo -e "${GREEN}✓ 更新完成${NC}"
 }
 
