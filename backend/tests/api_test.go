@@ -43,6 +43,7 @@ func setupRouter(db *sqlx.DB, logger *zap.Logger) *gin.Engine {
 	alertSourceRepo := repository.NewAlertSourceRepo(db)
 	alertRecordRepo := repository.NewAlertRecordRepo(db)
 	clientRepo := repository.NewClientRepo(db)
+	ticketTypeRepo := repository.NewTicketTypeRepo(db)
 	ticketLogRepo := repository.NewTicketLogRepo(db)
 	auditLogRepo := repository.NewAuditLogRepo(db)
 	userRepo := repository.NewUserRepo(db)
@@ -60,6 +61,7 @@ func setupRouter(db *sqlx.DB, logger *zap.Logger) *gin.Engine {
 		ExpireHours: 24,
 	})
 	clientService := service.NewClientService(clientRepo, logger)
+	ticketTypeService := service.NewTicketTypeService(ticketTypeRepo, logger)
 
 	// Worker pool (start but tests don't depend on push delivery).
 	retryCfg := client.RetryConfig{MaxAttempts: 3, BaseInterval: time.Second, MaxInterval: 5 * time.Second}
@@ -70,10 +72,12 @@ func setupRouter(db *sqlx.DB, logger *zap.Logger) *gin.Engine {
 	// Handlers.
 	authHandler := handler.NewAuthHandler(authService, logger)
 	alertHandler := handler.NewAlertHandler(alertService, alertSourceRepo, logger)
-	ticketHandler := handler.NewTicketHandler(ticketService, logger)
+	ticketHandler := handler.NewTicketHandler(ticketService, clientRepo, ticketTypeRepo, ticketRepo, logger)
 	clientHandler := handler.NewClientHandler(clientService, logger)
 	callbackHandler := handler.NewCallbackHandler(ticketService, logger)
 	adminHandler := handler.NewAdminHandler(auditLogRepo, logger)
+	userHandler := handler.NewUserHandler(userService, logger)
+	ticketTypeHandler := handler.NewTicketTypeHandler(ticketTypeService, logger)
 
 	// Router mirrors cmd/server/main.go layout.
 	r := gin.New()
@@ -107,6 +111,8 @@ func setupRouter(db *sqlx.DB, logger *zap.Logger) *gin.Engine {
 			tickets.PUT("/tickets/:id", ticketHandler.Update)
 			tickets.POST("/tickets/:id/retry", ticketHandler.Retry)
 			tickets.POST("/tickets/:id/cancel", ticketHandler.Cancel)
+			// Manual ticket creation (admin/operator).
+			tickets.POST("/tickets/manual", ticketHandler.CreateManual)
 		}
 
 		clients := api.Group("")
@@ -126,6 +132,26 @@ func setupRouter(db *sqlx.DB, logger *zap.Logger) *gin.Engine {
 		auditLogs.Use(middleware.JWTAuth(authService))
 		{
 			auditLogs.GET("/audit-logs", adminHandler.ListAuditLogs)
+		}
+
+		// User management endpoints (admin-only).
+		usersAdmin := api.Group("")
+		usersAdmin.Use(middleware.JWTAuth(authService), middleware.RequireAdmin())
+		{
+			usersAdmin.GET("/users", userHandler.List)
+			usersAdmin.POST("/users", userHandler.Create)
+			usersAdmin.PUT("/users/:id", userHandler.Update)
+			usersAdmin.DELETE("/users/:id", userHandler.Delete)
+		}
+
+		// Ticket type endpoints (admin-only).
+		ticketTypesAdmin := api.Group("")
+		ticketTypesAdmin.Use(middleware.JWTAuth(authService), middleware.RequireAdmin())
+		{
+			ticketTypesAdmin.GET("/ticket-types", ticketTypeHandler.List)
+			ticketTypesAdmin.POST("/ticket-types", ticketTypeHandler.Create)
+			ticketTypesAdmin.PUT("/ticket-types/:id", ticketTypeHandler.Update)
+			ticketTypesAdmin.DELETE("/ticket-types/:id", ticketTypeHandler.Delete)
 		}
 
 		api.POST("/auth/login", authHandler.Login)

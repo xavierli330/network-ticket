@@ -178,7 +178,6 @@ func main() {
 	userHandler := handler.NewUserHandler(userService, logger)
 	ticketTypeHandler := handler.NewTicketTypeHandler(ticketTypeService, logger)
 
-	_ = ticketTypeHandler // TODO: register routes in a later task
 
 	// ---------------------------------------------------------------------------
 	// 9. Set up Gin router
@@ -229,6 +228,8 @@ func main() {
 			tickets.PUT("/tickets/:id", ticketHandler.Update)
 			tickets.POST("/tickets/:id/retry", ticketHandler.Retry)
 			tickets.POST("/tickets/:id/cancel", ticketHandler.Cancel)
+			// Manual ticket creation (admin/operator).
+			tickets.POST("/tickets/manual", ticketHandler.CreateManual)
 		}
 
 		// Client endpoints (admin-only for mutations).
@@ -260,6 +261,16 @@ func main() {
 			usersAdmin.POST("/users", userHandler.Create)
 			usersAdmin.PUT("/users/:id", userHandler.Update)
 			usersAdmin.DELETE("/users/:id", userHandler.Delete)
+		}
+
+		// Ticket type endpoints (admin-only).
+		ticketTypesAdmin := api.Group("")
+		ticketTypesAdmin.Use(middleware.JWTAuth(authService), middleware.RequireAdmin())
+		{
+			ticketTypesAdmin.GET("/ticket-types", ticketTypeHandler.List)
+			ticketTypesAdmin.POST("/ticket-types", ticketTypeHandler.Create)
+			ticketTypesAdmin.PUT("/ticket-types/:id", ticketTypeHandler.Update)
+			ticketTypesAdmin.DELETE("/ticket-types/:id", ticketTypeHandler.Delete)
 		}
 
 		// Auth endpoint.
