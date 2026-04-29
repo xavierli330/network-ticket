@@ -18,6 +18,7 @@ type Ticket struct {
 	TicketNo      string     `db:"ticket_no"      json:"ticket_no"`
 	AlertSourceID int64      `db:"alert_source_id" json:"alert_source_id"`
 	SourceType    string     `db:"source_type"    json:"source_type"`
+	TicketTypeID  *int64     `db:"ticket_type_id" json:"ticket_type_id"`
 	AlertRaw      JSON       `db:"alert_raw"      json:"alert_raw"`
 	AlertParsed   JSON       `db:"alert_parsed"   json:"alert_parsed"`
 	Title         string     `db:"title"          json:"title"`
