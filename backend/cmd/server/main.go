@@ -18,6 +18,7 @@ import (
 	"github.com/xavierli/network-ticket/internal/handler"
 	"github.com/xavierli/network-ticket/internal/middleware"
 	"github.com/xavierli/network-ticket/internal/nonce"
+	"github.com/xavierli/network-ticket/internal/poller"
 	"github.com/xavierli/network-ticket/internal/repository"
 	"github.com/xavierli/network-ticket/internal/service"
 )
@@ -153,7 +154,17 @@ func main() {
 	defer workerPool.Stop()
 
 	// ---------------------------------------------------------------------------
-	// 8. Create handlers
+	// 8. Start poller scheduler
+	// ---------------------------------------------------------------------------
+	pollScheduler := poller.NewScheduler(alertSourceRepo, alertService, logger)
+	if err := pollScheduler.Start(); err != nil {
+		logger.Error("failed to start poller scheduler", zap.Error(err))
+	} else {
+		defer pollScheduler.Stop()
+	}
+
+	// ---------------------------------------------------------------------------
+	// 9. Create handlers
 	// ---------------------------------------------------------------------------
 	authHandler := handler.NewAuthHandler(authService, logger)
 	alertHandler := handler.NewAlertHandler(alertService, alertSourceRepo, logger)
