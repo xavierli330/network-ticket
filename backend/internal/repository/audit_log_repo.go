@@ -54,16 +54,15 @@ func (r *AuditLogRepo) List(ctx context.Context, page, pageSize int, operator st
 	offset := (page - 1) * pageSize
 
 	var logs []model.AuditLog
+	var listArgs []interface{}
 	listQuery := `SELECT * FROM audit_logs`
 	if operator != "" {
 		listQuery += ` WHERE actor = ?`
+		listArgs = append(listArgs, operator)
 	}
 	listQuery += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
-	if operator != "" {
-		args = append([]interface{}{operator}, args...)
-	}
-	args = append(args, pageSize, offset)
-	if err := r.db.SelectContext(ctx, &logs, listQuery, args...); err != nil {
+	listArgs = append(listArgs, pageSize, offset)
+	if err := r.db.SelectContext(ctx, &logs, listQuery, listArgs...); err != nil {
 		return nil, 0, fmt.Errorf("list audit_logs: %w", err)
 	}
 	return logs, total, nil
