@@ -21,11 +21,11 @@ func NewTicketRepo(db *sqlx.DB) *TicketRepo {
 // Create inserts a new ticket and returns the ID.
 func (r *TicketRepo) Create(ctx context.Context, t *model.Ticket) (int64, error) {
 	query := `INSERT INTO tickets
-		(ticket_no, alert_source_id, source_type, alert_raw, alert_parsed, title, description,
+		(ticket_no, alert_source_id, source_type, ticket_type_id, alert_raw, alert_parsed, title, description,
 		 severity, status, client_id, external_id, callback_data, fingerprint, timeout_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	result, err := r.db.ExecContext(ctx, query,
-		t.TicketNo, t.AlertSourceID, t.SourceType, t.AlertRaw, t.AlertParsed, t.Title, t.Description,
+		t.TicketNo, t.AlertSourceID, t.SourceType, t.TicketTypeID, t.AlertRaw, t.AlertParsed, t.Title, t.Description,
 		t.Severity, t.Status, t.ClientID, t.ExternalID, t.CallbackData, t.Fingerprint, t.TimeoutAt,
 	)
 	if err != nil {
@@ -33,6 +33,15 @@ func (r *TicketRepo) Create(ctx context.Context, t *model.Ticket) (int64, error)
 	}
 	id, _ := result.LastInsertId()
 	return id, nil
+}
+
+// UpdateTicketTypeID sets the ticket_type_id for a ticket.
+func (r *TicketRepo) UpdateTicketTypeID(ctx context.Context, ticketID int64, ticketTypeID *int64) error {
+	query := `UPDATE tickets SET ticket_type_id = ? WHERE id = ?`
+	if _, err := r.db.ExecContext(ctx, query, ticketTypeID, ticketID); err != nil {
+		return fmt.Errorf("update ticket type id: %w", err)
+	}
+	return nil
 }
 
 // GetByID returns a ticket by its primary key.
