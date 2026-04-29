@@ -7,21 +7,29 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 
+	"github.com/xavierli/network-ticket/internal/alert/parser"
 	"github.com/xavierli/network-ticket/internal/model"
+	"github.com/xavierli/network-ticket/internal/repository"
 	"github.com/xavierli/network-ticket/internal/service"
 )
 
 // TicketHandler handles ticket CRUD and status transition endpoints.
 type TicketHandler struct {
-	ticketService *service.TicketService
-	logger        *zap.Logger
+	ticketService  *service.TicketService
+	clientRepo     *repository.ClientRepo
+	ticketTypeRepo *repository.TicketTypeRepo
+	ticketRepo     *repository.TicketRepo
+	logger         *zap.Logger
 }
 
 // NewTicketHandler creates a new TicketHandler.
-func NewTicketHandler(ts *service.TicketService, l *zap.Logger) *TicketHandler {
+func NewTicketHandler(ts *service.TicketService, clientRepo *repository.ClientRepo, ticketTypeRepo *repository.TicketTypeRepo, ticketRepo *repository.TicketRepo, l *zap.Logger) *TicketHandler {
 	return &TicketHandler{
-		ticketService: ts,
-		logger:        l,
+		ticketService:  ts,
+		clientRepo:     clientRepo,
+		ticketTypeRepo: ticketTypeRepo,
+		ticketRepo:     ticketRepo,
+		logger:         l,
 	}
 }
 
@@ -153,4 +161,82 @@ func (h *TicketHandler) Cancel(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "ticket cancelled"})
+}
+
+// CreateManualRequest represents a manual ticket creation request.
+type CreateManualRequest struct {
+	TicketTypeID int64   `json:"ticket_type_id" binding:"required"`
+	Title        string  `json:"title" binding:"required"`
+	Description  *string `json:"description"`
+	Severity     string  `json:"severity" binding:"required"`
+	ClientID     *int64  `json:"client_id"`
+}
+
+// CreateManual handles manual ticket creation.
+func (h *TicketHandler) CreateManual(c *gin.Context) {
+	var req CreateManualRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ticket_type_id, title and severity are required"})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// 1. Validate ticket type exists and is active.
+	ticketType, err := h.ticketTypeRepo.GetByID(ctx, req.TicketTypeID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid ticket type"})
+		return
+	}
+	if ticketType.Status != "active" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ticket type is not active"})
+		return
+	}
+
+	// 2. Validate client if provided.
+	if req.ClientID != nil {
+		client, err := h.clientRepo.GetByID(ctx, *req.ClientID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client"})
+			return
+		}
+		if client.Status != "active" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "client is not active"})
+			return
+		}
+	}
+
+	// 3. Construct ParsedAlert.
+	var desc string
+	if req.Description != nil {
+		desc = *req.Description
+	}
+	parsed := &parser.ParsedAlert{
+		Title:       req.Title,
+		Description: desc,
+		Severity:    req.Severity,
+	}
+
+	// 4. Create ticket via TicketService.
+	ticket, err := h.ticketService.CreateTicket(ctx, 0, "manual", []byte("{}"), parsed, req.ClientID, nil)
+	if err != nil {
+		h.logger.Error("manual ticket creation failed", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create ticket"})
+		return
+	}
+
+	// 5. Set ticket_type_id.
+	if err := h.ticketRepo.UpdateTicketTypeID(ctx, ticket.ID, &req.TicketTypeID); err != nil {
+		h.logger.Error("set ticket type id failed", zap.Int64("ticket_id", ticket.ID), zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to set ticket type"})
+		return
+	}
+
+	// Refresh ticket to include the type.
+	ticket, err = h.ticketService.GetByID(ctx, ticket.ID)
+	if err != nil {
+		h.logger.Warn("refresh ticket after create failed", zap.Int64("ticket_id", ticket.ID), zap.Error(err))
+	}
+
+	c.JSON(http.StatusCreated, ticket)
 }

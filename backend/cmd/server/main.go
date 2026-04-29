@@ -69,6 +69,7 @@ func main() {
 	alertSourceRepo := repository.NewAlertSourceRepo(db)
 	alertRecordRepo := repository.NewAlertRecordRepo(db)
 	clientRepo := repository.NewClientRepo(db)
+	ticketTypeRepo := repository.NewTicketTypeRepo(db)
 	ticketLogRepo := repository.NewTicketLogRepo(db)
 	auditLogRepo := repository.NewAuditLogRepo(db)
 	userRepo := repository.NewUserRepo(db)
@@ -119,6 +120,8 @@ func main() {
 		logger,
 	)
 
+	ticketTypeService := service.NewTicketTypeService(ticketTypeRepo, logger)
+
 	// ---------------------------------------------------------------------------
 	// 7. Create and start worker pool
 	// ---------------------------------------------------------------------------
@@ -168,11 +171,14 @@ func main() {
 	// ---------------------------------------------------------------------------
 	authHandler := handler.NewAuthHandler(authService, logger)
 	alertHandler := handler.NewAlertHandler(alertService, alertSourceRepo, logger)
-	ticketHandler := handler.NewTicketHandler(ticketService, logger)
+	ticketHandler := handler.NewTicketHandler(ticketService, clientRepo, ticketTypeRepo, ticketRepo, logger)
 	clientHandler := handler.NewClientHandler(clientService, logger)
 	callbackHandler := handler.NewCallbackHandler(ticketService, logger)
 	adminHandler := handler.NewAdminHandler(auditLogRepo, logger)
 	userHandler := handler.NewUserHandler(userService, logger)
+	ticketTypeHandler := handler.NewTicketTypeHandler(ticketTypeService, logger)
+
+	_ = ticketTypeHandler // TODO: register routes in a later task
 
 	// ---------------------------------------------------------------------------
 	// 9. Set up Gin router
