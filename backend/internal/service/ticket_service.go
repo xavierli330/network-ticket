@@ -85,7 +85,7 @@ func (s *TicketService) CreateTicket(ctx context.Context, alertSourceID int64, s
 
 	ticket := &model.Ticket{
 		TicketNo:      ticketNo,
-		AlertSourceID: alertSourceID,
+		AlertSourceID: &alertSourceID,
 		SourceType:    sourceType,
 		AlertRaw:      model.JSON(alertRaw),
 		AlertParsed:   model.JSON(alertParsedJSON),
