@@ -152,6 +152,18 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
                 <dt className="text-gray-500">严重级别</dt>
                 <dd className="mt-0.5"><SeverityBadge severity={ticket.severity} /></dd>
               </div>
+              <div>
+                <dt className="text-gray-500">工单类型</dt>
+                <dd className="mt-0.5">
+                  {ticket.ticket_type ? (
+                    <span className="rounded px-2 py-0.5 text-xs text-white" style={{ backgroundColor: ticket.ticket_type.color }}>
+                      {ticket.ticket_type.name}
+                    </span>
+                  ) : (
+                    '-'
+                  )}
+                </dd>
+              </div>
               <div className="col-span-2">
                 <dt className="text-gray-500">描述</dt>
                 <dd className="mt-0.5 whitespace-pre-wrap">{ticket.description || '-'}</dd>
