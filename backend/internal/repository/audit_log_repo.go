@@ -32,11 +32,16 @@ func (r *AuditLogRepo) Create(ctx context.Context, al *model.AuditLog) (int64, e
 }
 
 // List returns a paginated list of audit logs.
-func (r *AuditLogRepo) List(ctx context.Context, page, pageSize int) ([]model.AuditLog, int, error) {
+func (r *AuditLogRepo) List(ctx context.Context, page, pageSize int, operator string) ([]model.AuditLog, int, error) {
 	// Count total.
 	var total int
+	var args []interface{}
 	countQuery := `SELECT COUNT(*) FROM audit_logs`
-	if err := r.db.GetContext(ctx, &total, countQuery); err != nil {
+	if operator != "" {
+		countQuery += ` WHERE actor = ?`
+		args = append(args, operator)
+	}
+	if err := r.db.GetContext(ctx, &total, countQuery, args...); err != nil {
 		return nil, 0, fmt.Errorf("count audit_logs: %w", err)
 	}
 
@@ -49,8 +54,16 @@ func (r *AuditLogRepo) List(ctx context.Context, page, pageSize int) ([]model.Au
 	offset := (page - 1) * pageSize
 
 	var logs []model.AuditLog
-	listQuery := `SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT ? OFFSET ?`
-	if err := r.db.SelectContext(ctx, &logs, listQuery, pageSize, offset); err != nil {
+	listQuery := `SELECT * FROM audit_logs`
+	if operator != "" {
+		listQuery += ` WHERE actor = ?`
+	}
+	listQuery += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`
+	if operator != "" {
+		args = append([]interface{}{operator}, args...)
+	}
+	args = append(args, pageSize, offset)
+	if err := r.db.SelectContext(ctx, &logs, listQuery, args...); err != nil {
 		return nil, 0, fmt.Errorf("list audit_logs: %w", err)
 	}
 	return logs, total, nil

@@ -29,6 +29,7 @@ func NewAdminHandler(ar *repository.AuditLogRepo, l *zap.Logger) *AdminHandler {
 func (h *AdminHandler) ListAuditLogs(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	operator := c.DefaultQuery("operator", "")
 
 	if page < 1 {
 		page = 1
@@ -37,7 +38,7 @@ func (h *AdminHandler) ListAuditLogs(c *gin.Context) {
 		pageSize = 20
 	}
 
-	logs, total, err := h.auditRepo.List(c.Request.Context(), page, pageSize)
+	logs, total, err := h.auditRepo.List(c.Request.Context(), page, pageSize, operator)
 	if err != nil {
 		h.logger.Error("list audit logs failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list audit logs"})

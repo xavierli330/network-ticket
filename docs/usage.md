@@ -67,6 +67,34 @@
 POST http://your-server/api/v1/alerts/webhook/{source_id}
 ```
 
+**完整配置示例**：
+
+以下是一个 `generic` 类型告警源的完整配置（API 或数据库视角）：
+
+```json
+{
+  "name": "内部监控系统",
+  "type": "generic",
+  "webhook_secret": "wh_secret_xxx",
+  "poll_endpoint": null,
+  "poll_interval": 0,
+  "dedup_fields": ["host", "alertname"],
+  "dedup_window_sec": 300,
+  "status": "active"
+}
+```
+
+各字段格式说明：
+
+| 字段            | 格式示例                              | 说明                              |
+| --------------- | ------------------------------------- | --------------------------------- |
+| `type`          | `"zabbix"` / `"prometheus"` / `"generic"` | 一旦创建不建议修改类型            |
+| `webhook_secret`| `"wh_secret_xxx"`                     | 任意字符串，建议 16 位以上随机值  |
+| `dedup_fields`  | `["host", "alertname"]`               | JSON 数组，元素为 gjson 路径字符串 |
+| `dedup_window_sec`| `300`                               | 整数，单位秒，范围建议 60~3600    |
+| `poll_interval` | `60`                                  | 整数，单位秒，与 `poll_endpoint` 同时设置时生效 |
+| `status`        | `"active"` / `"inactive"`             | `inactive` 时停止接收新告警       |
+
 ### 2.2 Zabbix Webhook 配置
 
 在 Zabbix 管理端完成以下配置：
@@ -82,6 +110,36 @@ POST http://your-server/api/v1/alerts/webhook/{source_id}
 4. HTTP 方法选择 `POST`
 5. 如配置了 Webhook Secret，添加 HTTP Header：`X-Webhook-Secret: <your_secret>`
 
+**Zabbix Webhook 参数示例**（Parameters 配置）：
+
+| 参数名       | 值示例                                     | 说明                  |
+| ------------ | ------------------------------------------ | --------------------- |
+| `URL`        | `http://your-server/api/v1/alerts/webhook/1`| Webhook 地址          |
+| `to`         | `{ALERT.SENDTO}`                           | 收件人（可留空）      |
+| `subject`    | `{EVENT.NAME}`                             | 告警主题              |
+| `message`    | `{EVENT.OPDATA}`                           | 告警详情              |
+| `event.id`   | `{EVENT.ID}`                               | 事件 ID               |
+| `event.severity` | `{EVENT.SEVERITY}`                     | 严重等级              |
+| `host.name`  | `{HOST.NAME}`                              | 主机名                |
+| `host.ip`    | `{HOST.IP}`                                | 主机 IP               |
+
+Zabbix 发送的 JSON 格式示例：
+
+```json
+{
+  "subject": "CPU 使用率超过 90%",
+  "message": "server-01 的 CPU 使用率已达 95%，持续 5 分钟",
+  "event": {
+    "id": "12345",
+    "severity": "High"
+  },
+  "host": {
+    "name": "server-01",
+    "ip": "192.168.1.100"
+  }
+}
+```
+
 **步骤二：配置 Action**
 
 1. 进入 Configuration → Actions → Create action
@@ -94,11 +152,21 @@ POST http://your-server/api/v1/alerts/webhook/{source_id}
 在 Alertmanager 的 `alertmanager.yml` 中添加 receiver：
 
 ```yaml
+global:
+  resolve_timeout: 5m
+
 route:
+  group_by: ['alertname']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
   receiver: 'network-ticket'
   routes:
     - match:
         severity: critical
+      receiver: 'network-ticket'
+    - match:
+        severity: warning
       receiver: 'network-ticket'
 
 receivers:
@@ -108,21 +176,40 @@ receivers:
         send_resolved: true
 ```
 
+**配置说明**：
+
+| 参数             | 示例值               | 说明                              |
+| ---------------- | -------------------- | --------------------------------- |
+| `url`            | 平台 Webhook 地址    | 将 `{source_id}` 替换为实际告警源 ID |
+| `send_resolved`  | `true` / `false`     | `true` 时告警恢复也会推送（平台解析为 `severity: info`） |
+| `severity` match | `critical` / `warning` | 可根据需要调整路由匹配规则        |
+
 平台内置 Prometheus 解析器会提取 `alerts.0.labels.alertname`、`alerts.0.annotations.summary`、`alerts.0.labels.severity`、`alerts.0.labels.instance` 等字段。
 
 ### 2.4 通用 JSON 告警
 
-对于其他监控系统，使用 `generic` 类型。平台通过 gjson 路径从原始 JSON 中提取字段：
+对于其他监控系统，使用 `generic` 类型。平台通过 [gjson](https://github.com/tidwall/gjson) 路径从原始 JSON 中提取字段。
 
-| 提取字段   | gjson 路径（按优先级）                          |
-| ---------- | ----------------------------------------------- |
-| 标题       | `title` → `alertname`                          |
-| 描述       | `description` → `message`                      |
-| 严重程度   | `severity`（自动归一化为 critical/warning/info） |
-| 源 IP      | `source_ip`                                    |
-| 设备名称   | `device_name`                                  |
+**提取规则**：
 
-示例原始 JSON：
+| 提取字段   | gjson 路径（按优先级）                          | 说明                              |
+| ---------- | ----------------------------------------------- | --------------------------------- |
+| 标题       | `title` → `alertname`                          | 先取 `title`，不存在则取 `alertname` |
+| 描述       | `description` → `message`                      | 先取 `description`，不存在则取 `message` |
+| 严重程度   | `severity`（自动归一化为 critical/warning/info） | 含 `crit`/`p1`/`emerg` → `critical`；含 `warn`/`p2`/`high` → `warning`；其他 → `info` |
+| 源 IP      | `source_ip`                                    | 直接取 `source_ip` 字段           |
+| 设备名称   | `device_name`                                  | 直接取 `device_name` 字段         |
+
+**gjson 路径语法速查**：
+
+| 语法          | 示例                | 说明                          |
+| ------------- | ------------------- | ----------------------------- |
+| `.`           | `host.name`         | 访问嵌套对象字段              |
+| `\.`          | `event\.severity`  | 字段名本身含点号时需转义      |
+| `#`           | `alerts.0.labels`   | 数组索引（从 0 开始）         |
+| 通配符 `*`    | `alerts.0.labels.*` | 匹配对象下所有字段（不常用）  |
+
+**示例 1：扁平 JSON（最简单）**
 
 ```json
 {
@@ -134,23 +221,135 @@ receivers:
 }
 ```
 
+**示例 2：嵌套 JSON（使用点号路径）**
+
+```json
+{
+  "alert": {
+    "name": "磁盘空间不足",
+    "summary": "/data 分区剩余空间 < 10%"
+  },
+  "meta": {
+    "host": "db-master-01",
+    "ip": "10.0.0.5"
+  },
+  "level": "warning"
+}
+```
+
+> 若需适配此格式，可通过 `parser_config` 配置自定义映射（当前 `generic` 固定使用上述路径，如需自定义请使用特定解析器或联系开发团队）。
+
+**示例 3：含数组的 JSON**
+
+```json
+{
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {
+        "alertname": "MemoryHigh",
+        "instance": "192.168.1.20:9100",
+        "severity": "warning"
+      },
+      "annotations": {
+        "summary": "内存使用率超过 85%"
+      }
+    }
+  ]
+}
+```
+
+> 数组访问方式：`alerts.0.labels.alertname` 取第一个 alert 的 `alertname`。这与 Prometheus 解析器使用的路径一致。
+
 ### 2.5 轮询配置
 
-当外部系统不支持 Webhook 时，可配置轮询模式：
+当外部系统不支持 Webhook 时，可配置轮询模式。平台会定时向 `poll_endpoint` 发送 `GET` 请求拉取告警列表。
 
-- **poll_endpoint**：外部数据源 URL，平台定时拉取
-- **poll_interval**：拉取间隔（秒）
+**启用条件**：`poll_endpoint` 和 `poll_interval` 必须同时设置。
 
-两个条件同时设置时启用轮询模式。
+**完整配置示例**：
+
+```json
+{
+  "name": "内部监控 API",
+  "type": "generic",
+  "poll_endpoint": "http://monitor.internal/api/alerts",
+  "poll_interval": 60,
+  "dedup_fields": ["id"],
+  "dedup_window_sec": 300,
+  "status": "active"
+}
+```
+
+**轮询端点响应格式要求**：
+
+轮询端点应返回 JSON 数组，每个元素为一条告警原始数据：
+
+```json
+[
+  {
+    "title": "CPU 使用率过高",
+    "description": "server-01 CPU 超过 90%",
+    "severity": "critical",
+    "source_ip": "192.168.1.100",
+    "device_name": "server-01",
+    "id": "alert-001"
+  },
+  {
+    "title": "内存不足",
+    "description": "server-02 内存使用率 95%",
+    "severity": "warning",
+    "source_ip": "192.168.1.101",
+    "device_name": "server-02",
+    "id": "alert-002"
+  }
+]
+```
+
+> 平台会遍历数组中的每个元素，逐条解析并创建/关联工单。若返回非数组 JSON，则尝试将其作为单条告警处理。
 
 ### 2.6 去重配置
 
-防止重复告警产生重复工单：
+防止重复告警产生重复工单。平台对 `dedup_fields` 指定的字段值拼接后计算 SHA-256 指纹，在同一时间窗口内相同指纹的告警会追加到已有工单，而非创建新工单。
 
-- **dedup_fields**：指定用于指纹计算的 JSONPath 字段列表，如 `["host", "trigger_name"]`
-- **dedup_window_sec**：去重时间窗口（秒），默认 300
+**配置字段**：
 
-平台对指定字段的值拼接后计算 SHA-256 指纹，在同一时间窗口内相同指纹的告警会追加到已有工单而非创建新工单。
+| 字段               | 示例值                  | 说明                              |
+| ------------------ | ----------------------- | --------------------------------- |
+| `dedup_fields`     | `["host", "alertname"]` | JSON 数组，元素为 gjson 路径字符串 |
+| `dedup_window_sec` | `300`                   | 去重时间窗口（秒），默认 300（5 分钟） |
+
+**完整配置示例**：
+
+```json
+{
+  "name": "Zabbix 主监控",
+  "type": "zabbix",
+  "dedup_fields": ["host.name", "event.name"],
+  "dedup_window_sec": 600,
+  "status": "active"
+}
+```
+
+**去重效果示例**：
+
+假设 `dedup_fields` 配置为 `["host", "alertname"]`，`dedup_window_sec` 为 `300`：
+
+| 时间   | 收到告警                          | 处理结果                    |
+| ------ | --------------------------------- | --------------------------- |
+| T+0s   | `{"host":"srv01","alertname":"CPU高","severity":"critical"}` | 创建新工单 #NT001           |
+| T+60s  | `{"host":"srv01","alertname":"CPU高","severity":"warning"}` | 追加到工单 #NT001（指纹相同） |
+| T+120s | `{"host":"srv02","alertname":"CPU高","severity":"critical"}` | 创建新工单 #NT002（host 不同） |
+| T+400s | `{"host":"srv01","alertname":"CPU高","severity":"critical"}` | 创建新工单 #NT003（窗口已过） |
+
+**指纹计算逻辑**：
+
+```
+指纹 = SHA256( host值 + "|" + alertname值 )
+      = SHA256( "srv01|CPU高" )
+```
+
+> 若 `dedup_fields` 中指定的字段在告警 JSON 中不存在，该次去重计算会失败，平台将跳过去重直接创建新工单。
 
 ---
 
@@ -170,6 +369,31 @@ receivers:
 | HMAC Secret     | 是   | HMAC-SHA256 签名密钥                     |
 | 回调地址        | 否   | 客户授权回调 URL（平台推送给客户时携带）  |
 | 状态 (status)   | 否   | `active`（默认）/ `inactive`             |
+
+**完整配置示例**：
+
+```json
+{
+  "name": "XX公司运维系统",
+  "api_endpoint": "https://ops.xxx.com/api/tickets",
+  "api_key": "ak_xxx_company_2024",
+  "hmac_secret": "hs_xxx_company_secret",
+  "callback_url": "https://ops.xxx.com/callback/ticket",
+  "config": "{}",
+  "status": "active"
+}
+```
+
+各字段格式说明：
+
+| 字段           | 格式示例                              | 说明                              |
+| -------------- | ------------------------------------- | --------------------------------- |
+| `api_key`      | `"ak_xxx"`                            | 建议前缀 `ak_`，长度 16~64 位     |
+| `hmac_secret`  | `"hs_xxx"`                            | 建议前缀 `hs_`，长度 32~128 位    |
+| `api_endpoint` | `"https://client.com/api/tickets"`    | 必须可被平台服务器访问            |
+| `callback_url` | `"https://client.com/callback"`       | 客户回调平台时，平台会将其回传    |
+| `config`       | `"{}"` 或 `"{\"custom\":true}"`      | 扩展配置，JSON 字符串格式          |
+| `status`       | `"active"` / `"inactive"`             | `inactive` 时停止向该客户推送工单 |
 
 ### 3.2 API Key 与 HMAC Secret 说明
 
@@ -226,7 +450,35 @@ curl -X POST https://client-server/api/tickets \
 
 每个节点的状态为：`pending` / `active` / `done` / `failed` / `skipped` / `timeout`。
 
-**告警追加记录**：同一指纹的重复告警在去重窗口内会追加到已有工单，可在详情页查看追加历史。
+**Workflow 时间线示例**：
+
+一个正常流转的工单，其 workflow 状态如下：
+
+| 时间                | 节点            | 状态   | 说明                    |
+| ------------------- | --------------- | ------ | ----------------------- |
+| 2024-01-01 12:00:00 | alert_received  | done   | 收到 Zabbix 告警        |
+| 2024-01-01 12:00:01 | parsed          | done   | 解析出 title/severity   |
+| 2024-01-01 12:00:02 | pushed          | done   | 推送至客户 A            |
+| 2024-01-01 12:00:02 | awaiting_auth   | active | 等待客户授权            |
+| 2024-01-01 12:05:00 | authorized      | done   | 客户 A 回调授权         |
+| 2024-01-01 12:05:01 | executing       | done   | 进入执行阶段            |
+| 2024-01-01 12:30:00 | completed       | done   | 处理完成                |
+
+异常场景示例：
+
+| 场景         | 节点状态变化                                |
+| ------------ | ------------------------------------------- |
+| 推送失败     | pushed → failed，工单状态变为 `failed`      |
+| 客户拒绝     | awaiting_auth → skipped, authorized → skipped, 工单状态变为 `rejected` |
+| 管理员取消   | 任意节点 → cancelled，工单状态变为 `cancelled` |
+
+**告警追加记录**：同一指纹的重复告警在去重窗口内会追加到已有工单，可在详情页查看追加历史。例如：
+
+| 时间                | 告警内容           | 操作         |
+| ------------------- | ------------------ | ------------ |
+| 2024-01-01 12:00:00 | CPU 使用率 90%     | 创建工单     |
+| 2024-01-01 12:02:00 | CPU 使用率 95%     | 追加记录     |
+| 2024-01-01 12:04:00 | CPU 使用率 98%     | 追加记录     |
 
 ### 4.3 手动操作
 
@@ -294,6 +546,8 @@ failed → cancelled     (管理员取消)
 }
 ```
 
+`alert_parsed` 字段包含平台从原始告警中提取的关键信息，内容取决于告警源类型和原始数据结构。常见字段包括：`source_ip`、`device_name`、`alert_time` 等。
+
 **客户验证签名的步骤**：
 
 1. 从请求头获取 `X-Timestamp`、`X-Signature`、`X-Nonce`
@@ -337,6 +591,18 @@ failed → cancelled     (管理员取消)
 | operator      | 否   | 操作人                                  |
 | comment       | 否   | 备注                                    |
 | authorized_at | 否   | 授权时间 (ISO 8601)                     |
+
+**拒绝回调示例**：
+
+```json
+{
+  "ticket_no": "NT20240101120000a1b2c3",
+  "action": "reject",
+  "operator": "李四",
+  "comment": "非我方负责范围，请转交网络组",
+  "authorized_at": "2024-01-01T12:10:00Z"
+}
+```
 
 **成功响应**：
 

@@ -61,6 +61,17 @@ export interface User {
   role: 'admin' | 'operator';
 }
 
+export interface AuditLog {
+  id: number;
+  actor: string;
+  action: string;
+  resource_type: string;
+  resource_id?: number;
+  detail: unknown;
+  ip_address?: string;
+  created_at: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;

@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { label: '工单管理', href: '/tickets' },
   { label: '客户管理', href: '/clients' },
   { label: '告警源管理', href: '/sources' },
+  { label: '审计日志', href: '/audit-logs' },
 ];
 
 export default function Sidebar() {
