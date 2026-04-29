@@ -2,16 +2,39 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-const NAV_ITEMS = [
+interface StoredUser {
+  id: number;
+  username: string;
+  role: string;
+}
+
+const ALL_NAV_ITEMS = [
   { label: '工单管理', href: '/tickets' },
-  { label: '客户管理', href: '/clients' },
   { label: '告警源管理', href: '/sources' },
   { label: '审计日志', href: '/audit-logs' },
+  { label: '客户管理', href: '/clients', adminOnly: true },
+  { label: '用户管理', href: '/users', adminOnly: true },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (raw) {
+        const user: StoredUser = JSON.parse(raw);
+        setRole(user.role);
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
+
+  const navItems = ALL_NAV_ITEMS.filter((item) => !item.adminOnly || role === 'admin');
 
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-gray-200 bg-white">
@@ -19,7 +42,7 @@ export default function Sidebar() {
         <h1 className="text-lg font-bold text-gray-800">网络工单平台</h1>
       </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link

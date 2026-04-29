@@ -6,6 +6,11 @@ import { api } from '@/lib/api';
 
 interface LoginResponse {
   token: string;
+  user: {
+    id: number;
+    username: string;
+    role: string;
+  };
 }
 
 export default function LoginPage() {
@@ -23,6 +28,7 @@ export default function LoginPage() {
     try {
       const data = await api.post<LoginResponse>('/auth/login', { username, password });
       api.setToken(data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
       router.push('/tickets');
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败');

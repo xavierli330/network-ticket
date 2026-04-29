@@ -59,6 +59,21 @@ export interface User {
   id: number;
   username: string;
   role: 'admin' | 'operator';
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserCreateRequest {
+  username: string;
+  password: string;
+  role: 'admin' | 'operator';
+}
+
+export interface UserUpdateRequest {
+  username: string;
+  password?: string;
+  role: 'admin' | 'operator';
 }
 
 export interface AuditLog {

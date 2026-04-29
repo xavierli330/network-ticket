@@ -111,6 +111,8 @@ func main() {
 		&cfg.JWT,
 	)
 
+	userService := service.NewUserService(userRepo, logger)
+
 	clientService := service.NewClientService(
 		clientRepo,
 		logger,
@@ -159,6 +161,7 @@ func main() {
 	clientHandler := handler.NewClientHandler(clientService, logger)
 	callbackHandler := handler.NewCallbackHandler(ticketService, logger)
 	adminHandler := handler.NewAdminHandler(auditLogRepo, logger)
+	userHandler := handler.NewUserHandler(userService, logger)
 
 	// ---------------------------------------------------------------------------
 	// 9. Set up Gin router
@@ -230,6 +233,16 @@ func main() {
 		auditLogs.Use(middleware.JWTAuth(authService))
 		{
 			auditLogs.GET("/audit-logs", adminHandler.ListAuditLogs)
+		}
+
+		// User management endpoints (admin-only).
+		usersAdmin := api.Group("")
+		usersAdmin.Use(middleware.JWTAuth(authService), middleware.RequireAdmin())
+		{
+			usersAdmin.GET("/users", userHandler.List)
+			usersAdmin.POST("/users", userHandler.Create)
+			usersAdmin.PUT("/users/:id", userHandler.Update)
+			usersAdmin.DELETE("/users/:id", userHandler.Delete)
 		}
 
 		// Auth endpoint.

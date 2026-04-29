@@ -37,14 +37,31 @@ func (r *UserRepo) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	return &u, nil
 }
 
-// List returns all users (password excluded via struct tag).
-func (r *UserRepo) List(ctx context.Context) ([]model.User, error) {
+// List returns paginated users (password excluded).
+func (r *UserRepo) List(ctx context.Context, page, pageSize int) ([]model.User, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
 	var users []model.User
-	query := `SELECT * FROM users ORDER BY id`
-	if err := r.db.SelectContext(ctx, &users, query); err != nil {
+	query := `SELECT id, username, role, status, created_at, updated_at FROM users ORDER BY id LIMIT ? OFFSET ?`
+	if err := r.db.SelectContext(ctx, &users, query, pageSize, offset); err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
 	}
 	return users, nil
+}
+
+// Count returns the total number of users.
+func (r *UserRepo) Count(ctx context.Context) (int, error) {
+	var total int
+	query := `SELECT COUNT(*) FROM users`
+	if err := r.db.GetContext(ctx, &total, query); err != nil {
+		return 0, fmt.Errorf("count users: %w", err)
+	}
+	return total, nil
 }
 
 // Create inserts a new user.
