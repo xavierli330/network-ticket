@@ -1,7 +1,21 @@
+export interface TicketType {
+  id: number;
+  code: string;
+  name: string;
+  description?: string;
+  color: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Ticket {
   id: number;
   ticket_no: string;
+  alert_source_id?: number;
   source_type: string;
+  ticket_type_id?: number;
+  ticket_type?: TicketType;
   title: string;
   description: string;
   severity: string;

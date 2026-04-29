@@ -15,6 +15,7 @@ const ALL_NAV_ITEMS = [
   { label: '告警源管理', href: '/sources' },
   { label: '审计日志', href: '/audit-logs' },
   { label: '客户管理', href: '/clients', adminOnly: true },
+  { label: '工单类型', href: '/ticket-types', adminOnly: true },
   { label: '用户管理', href: '/users', adminOnly: true },
 ];
 
