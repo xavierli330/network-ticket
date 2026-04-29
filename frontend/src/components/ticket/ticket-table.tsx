@@ -7,9 +7,10 @@ import SeverityBadge from './severity-badge';
 
 interface TicketTableProps {
   tickets: Ticket[];
+  ticketTypes?: { id: number; name: string }[];
 }
 
-export default function TicketTable({ tickets }: TicketTableProps) {
+export default function TicketTable({ tickets, ticketTypes }: TicketTableProps) {
   const router = useRouter();
 
   if (!tickets || tickets.length === 0) {
