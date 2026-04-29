@@ -496,6 +496,8 @@ curl -X POST https://client-server/api/tickets \
 | cancelled    | 管理员手动取消                     |
 | rejected     | 客户拒绝授权                       |
 
+> ⚠️ **已知问题**：当前版本工单创建后不会自动推送给客户。详见 [`docs/known-issues.md`](known-issues.md)。
+
 **合法的状态转换**：
 
 ```
