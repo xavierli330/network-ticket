@@ -1,4 +1,4 @@
-.PHONY: help deploy start stop restart status logs backup uninstall dev-backend dev-frontend build
+.PHONY: help deploy start stop restart status logs backup uninstall dev dev-down update dev-backend dev-frontend build
 
 help:
 	@echo "网络工单平台 - 快捷命令"
@@ -14,6 +14,8 @@ help:
 	@echo "  make uninstall   完全卸载"
 	@echo ""
 	@echo "开发:"
+	@echo "  make dev          启动 Docker Compose 开发环境（热重载）"
+	@echo "  make dev-down     停止 Docker Compose 开发环境"
 	@echo "  make dev-backend  启动后端热重载开发"
 	@echo "  make dev-frontend 启动前端开发服务器"
 	@echo "  make build        编译后端"
@@ -45,6 +47,12 @@ uninstall:
 
 update:
 	./manage.sh update
+
+dev:
+	./manage.sh dev
+
+dev-down:
+	./manage.sh dev-down
 
 dev-backend:
 	cd backend && make dev

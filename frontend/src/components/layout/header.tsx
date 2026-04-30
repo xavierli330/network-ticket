@@ -1,29 +1,28 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 
 export default function Header() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
 
-  function getUsername(): string {
-    if (typeof window === 'undefined') return '';
+  useEffect(() => {
     const token = api.getToken();
-    if (!token) return '';
+    if (!token) return;
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.username || payload.sub || '';
+      setUsername(payload.username || payload.sub || '');
     } catch {
-      return '';
+      // ignore
     }
-  }
+  }, []);
 
   function handleLogout() {
     api.clearToken();
     router.push('/login');
   }
-
-  const username = getUsername();
 
   return (
     <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">

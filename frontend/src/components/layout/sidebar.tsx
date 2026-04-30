@@ -17,6 +17,7 @@ const ALL_NAV_ITEMS = [
   { label: '客户管理', href: '/clients', adminOnly: true },
   { label: '工单类型', href: '/ticket-types', adminOnly: true },
   { label: '用户管理', href: '/users', adminOnly: true },
+  { label: '使用指引', href: '/help' },
 ];
 
 export default function Sidebar() {

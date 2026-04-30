@@ -4,6 +4,7 @@ set -e
 
 PROJECT_NAME="network-ticket"
 COMPOSE_FILE="docker-compose.yaml"
+COMPOSE_DEV_FILE="docker-compose.dev.yaml"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -30,6 +31,8 @@ usage() {
     echo "  status      查看服务状态"
     echo "  logs        查看实时日志"
     echo "  update      更新代码后重新构建部署"
+    echo "  dev         启动开发环境（热重载）"
+    echo "  dev-down    停止开发环境"
     echo "  backup      备份数据库"
     echo "  uninstall   完全卸载（删除容器与数据卷）"
     echo ""
@@ -81,6 +84,27 @@ cmd_update() {
     $DOCKER_COMPOSE -f $COMPOSE_FILE up -d --build
     $DOCKER_COMPOSE -f $COMPOSE_FILE restart nginx
     echo -e "${GREEN}✓ 更新完成${NC}"
+}
+
+cmd_dev() {
+    echo "正在启动开发环境（热重载）..."
+    $DOCKER_COMPOSE -f $COMPOSE_DEV_FILE up -d --build
+    echo -e "${GREEN}✓ 开发环境已启动${NC}"
+    echo ""
+    echo "  前端访问: http://localhost:3000"
+    echo "  后端 API: http://localhost:8080"
+    echo "  Nginx 代理: http://localhost"
+    echo ""
+    echo "  开发命令:"
+    echo "    ./manage.sh dev-down    停止开发环境"
+    echo "    $DOCKER_COMPOSE -f $COMPOSE_DEV_FILE logs -f backend    查看后端日志"
+    echo "    $DOCKER_COMPOSE -f $COMPOSE_DEV_FILE logs -f frontend   查看前端日志"
+}
+
+cmd_dev_down() {
+    echo "正在停止开发环境..."
+    $DOCKER_COMPOSE -f $COMPOSE_DEV_FILE down
+    echo -e "${GREEN}✓ 开发环境已停止${NC}"
 }
 
 cmd_backup() {
@@ -162,6 +186,12 @@ case "$COMMAND" in
         ;;
     update)
         cmd_update
+        ;;
+    dev)
+        cmd_dev
+        ;;
+    dev-down)
+        cmd_dev_down
         ;;
     backup)
         cmd_backup

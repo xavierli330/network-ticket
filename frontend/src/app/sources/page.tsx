@@ -239,7 +239,10 @@ export default function SourcesPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">解析器配置 (JSON)</label>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      解析器配置 (JSON)
+                      <a href="/help" target="_blank" className="ml-2 text-xs text-blue-500 hover:text-blue-700">查看配置指引</a>
+                    </label>
                     <textarea
                       value={form.parser_config}
                       onChange={(e) => updateForm('parser_config', e.target.value)}

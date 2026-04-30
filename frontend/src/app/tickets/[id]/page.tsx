@@ -40,8 +40,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     async function load() {
       try {
-        const data = await api.get<TicketDetail>(`/tickets/${id}`);
-        setTicket(data);
+        const data = await api.get<{ ticket: TicketDetail; workflow_states: WorkflowState[]; alert_records?: AlertRecord[] }>(`/tickets/${id}`);
+        setTicket({ ...data.ticket, workflow_states: data.workflow_states, alert_records: data.alert_records ?? [] });
       } catch {
         // error handled by api client
       } finally {
@@ -56,8 +56,8 @@ export default function TicketDetailPage({ params }: { params: Promise<{ id: str
     setActionLoading(true);
     try {
       await api.post(`/tickets/${ticket.id}/${action}`, {});
-      const data = await api.get<TicketDetail>(`/tickets/${id}`);
-      setTicket(data);
+      const data = await api.get<{ ticket: TicketDetail; workflow_states: WorkflowState[]; alert_records?: AlertRecord[] }>(`/tickets/${id}`);
+      setTicket({ ...data.ticket, workflow_states: data.workflow_states, alert_records: data.alert_records ?? [] });
     } catch {
       // error handled by api client
     } finally {
