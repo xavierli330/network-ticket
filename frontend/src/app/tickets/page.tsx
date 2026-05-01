@@ -50,6 +50,7 @@ export default function TicketsPage() {
   const [severity, setSeverity] = useState('');
   const [ticketTypeID, setTicketTypeID] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const pageSize = 20;
 
   const [ticketTypes, setTicketTypes] = useState<TicketType[]>([]);
@@ -101,6 +102,14 @@ export default function TicketsPage() {
   useEffect(() => {
     fetchTickets();
   }, [fetchTickets]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setKeyword(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     fetchTicketTypes();
@@ -194,8 +203,8 @@ export default function TicketsPage() {
 
             <input
               type="text"
-              value={keyword}
-              onChange={(e) => { setKeyword(e.target.value); setPage(1); }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="关键词搜索"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />

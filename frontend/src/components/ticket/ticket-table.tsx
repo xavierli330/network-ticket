@@ -64,7 +64,7 @@ export default function TicketTable({ tickets, ticketTypes }: TicketTableProps) 
                       </span>
                     );
                   }
-                  return '-';
+                  return <span className="text-gray-400">未分类</span>;
                 })()}
               </td>
               <td className="max-w-xs truncate px-4 py-3">{ticket.title}</td>
