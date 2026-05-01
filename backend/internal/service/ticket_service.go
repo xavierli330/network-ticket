@@ -18,6 +18,7 @@ var allowedTransitions = map[string][]string{
 	model.TicketStatusPending:    {model.TicketStatusInProgress, model.TicketStatusFailed, model.TicketStatusCancelled},
 	model.TicketStatusInProgress: {model.TicketStatusCompleted, model.TicketStatusFailed, model.TicketStatusRejected, model.TicketStatusCancelled},
 	model.TicketStatusFailed:     {model.TicketStatusPending, model.TicketStatusCancelled},
+	model.TicketStatusRejected:   {model.TicketStatusPending, model.TicketStatusInProgress, model.TicketStatusCancelled},
 }
 
 // CanTransition returns true if transitioning from one ticket status to another is allowed.

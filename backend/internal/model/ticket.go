@@ -36,10 +36,11 @@ type Ticket struct {
 
 // TicketFilter holds parameters for listing tickets.
 type TicketFilter struct {
-	Status   string `json:"status"`
-	ClientID int64  `json:"client_id"`
-	Severity string `json:"severity"`
-	Keyword  string `json:"keyword"`
-	Page     int    `json:"page"`
-	PageSize int    `json:"page_size"`
+	Status       string `json:"status"        form:"status"`
+	ClientID     int64  `json:"client_id"     form:"client_id"`
+	Severity     string `json:"severity"      form:"severity"`
+	Keyword      string `json:"keyword"       form:"keyword"`
+	TicketTypeID int64  `json:"ticket_type_id" form:"ticket_type_id"`
+	Page         int    `json:"page"          form:"page"`
+	PageSize     int    `json:"page_size"     form:"page_size"`
 }

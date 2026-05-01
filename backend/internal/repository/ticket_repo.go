@@ -102,6 +102,10 @@ func (r *TicketRepo) List(ctx context.Context, f model.TicketFilter) ([]model.Ti
 		conditions = append(conditions, "severity = ?")
 		args = append(args, f.Severity)
 	}
+	if f.TicketTypeID != 0 {
+		conditions = append(conditions, "ticket_type_id = ?")
+		args = append(args, f.TicketTypeID)
+	}
 	if f.Keyword != "" {
 		conditions = append(conditions, "(title LIKE ? OR description LIKE ?)")
 		kw := "%" + f.Keyword + "%"

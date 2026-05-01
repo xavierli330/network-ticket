@@ -99,7 +99,8 @@ export default function AuditLogsPage() {
                   {logs.length === 0 && (
                     <tr>
                       <td colSpan={6} className="py-12 text-center text-gray-400">
-                        暂无数据
+                        <p>暂无操作记录</p>
+                        <p className="mt-1 text-xs">系统将自动记录所有工单变更、客户操作和管理员行为</p>
                       </td>
                     </tr>
                   )}

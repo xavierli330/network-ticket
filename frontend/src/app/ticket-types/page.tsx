@@ -177,7 +177,10 @@ export default function TicketTypesPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="font-mono text-xs text-gray-500">{tt.color}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block h-4 w-4 rounded border border-gray-200" style={{ backgroundColor: tt.color }} />
+                            <span className="font-mono text-xs text-gray-500">{tt.color}</span>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <span
