@@ -35,3 +35,7 @@ backend/tmp/
 
 # docs diagrams node_modules
 docs/diagrams/node_modules/
+
+# docs diagrams 依赖文件
+docs/diagrams/package.json
+docs/diagrams/package-lock.json
