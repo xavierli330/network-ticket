@@ -29,3 +29,9 @@ Thumbs.db
 .superpowers/
 
 .worktrees/
+
+# 临时目录
+backend/tmp/
+
+# docs diagrams node_modules
+docs/diagrams/node_modules/
